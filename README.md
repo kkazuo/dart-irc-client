@@ -4,7 +4,7 @@ A tribial IRC client library.
 
 Supports:
 
-- Connect to IRC server with plain text.
+- Connect to IRC server with plain text or secured with TLS.
 - Automatic PING response.
 - Basic CTCP response. (CTCP VERSION / PING / TIME)
 

@@ -680,6 +680,7 @@ class IrcClient {
   final String host;
   final int port;
   final Duration? timeout;
+  final bool secure;
 
   final IrcUser user;
 
@@ -699,6 +700,7 @@ class IrcClient {
     String? userRealName,
     String? pass,
     this.timeout,
+    this.secure = false,
     Converter<String, List<int>>? encoder,
     Converter<List<int>, String>? decoder,
   })  : user = IrcUser(
@@ -711,8 +713,16 @@ class IrcClient {
         _decoder = decoder ?? Utf8Decoder(allowMalformed: true);
 
   Future<IrcConnection> connect() async {
-    final socket = await RawSocket.connect(host, port, timeout: timeout);
+    final socket = await _connect(host, port, timeout: timeout);
     socket.setOption(SocketOption.tcpNoDelay, true);
     return IrcConnection(this, _encoder, _decoder, socket);
+  }
+
+  Future<RawSocket> _connect(dynamic host, int port, {Duration? timeout}) {
+    if (secure) {
+      return RawSecureSocket.connect(host, port, timeout: timeout);
+    } else {
+      return RawSocket.connect(host, port, timeout: timeout);
+    }
   }
 }
