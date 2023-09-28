@@ -538,6 +538,11 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
     final user = client.user;
     final sink = IrcMessageSink(socket: _socket, encoder: _encoder);
     final parser = IrcParser(decoder: _decoder);
+    final ponger = Timer.periodic(const Duration(seconds: 137), (_) {
+      try {
+        sink.add(IrcMessage(command: 'PONG'));
+      } catch (_) {}
+    });
     final sub = _IrcStreamSubscription(sink, cancelOnError ?? false)
       ..onData(onData)
       ..onDone(onDone)
@@ -565,6 +570,7 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
             }
             break;
           case RawSocketEvent.readClosed:
+            ponger.cancel();
             _socket.close();
             break;
           case RawSocketEvent.closed:
@@ -575,10 +581,12 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
         }
       },
       onDone: () {
+        ponger.cancel();
         final h = sub.handleDone;
         if (h != null) h();
       },
       onError: (error, stackTrace) {
+        ponger.cancel();
         final h = sub.handleError;
         if (h != null) h(error, stackTrace);
       },
