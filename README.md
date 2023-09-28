@@ -1,4 +1,4 @@
-A tribial IRC client library.
+A trivial IRC client library.
 
 ## Features
 
