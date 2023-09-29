@@ -30,6 +30,31 @@ class IrcMessage {
   }
 
   @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! IrcMessage) return false;
+    return command == other.command &&
+        prefix == other.prefix &&
+        target == other.target &&
+        parameters.length == other.parameters.length &&
+        parameters.indexed.fold(
+          true,
+          (previousValue, element) =>
+              previousValue && (element.$2 == other.parameters[element.$1]),
+        );
+  }
+
+  @override
+  int get hashCode =>
+      command.hashCode ^
+      (prefix?.hashCode ?? 0) ^
+      (target?.hashCode ?? 0) ^
+      parameters.fold(
+        0,
+        (previousValue, element) => previousValue ^ element.hashCode,
+      );
+
+  @override
   String toString() =>
       '$prefix | $command | $target | ${parameters.join(" | ")}';
 }
@@ -119,6 +144,9 @@ class IrcParser {
             final s = _decodeBytes(data, _lastIndex, i);
             _params.add(s);
             break;
+          case ParseState.target:
+            _target = _decodeBytes(data, _lastIndex, i);
+            break;
           default:
             break;
         }
@@ -204,6 +232,23 @@ class IrcMessageSink implements StreamSink<IrcMessage> {
       ..arg('0')
       ..arg('*')
       ..arg(user.userRealName ?? user.user));
+  }
+
+  void capReqSasl() {
+    add(IrcMessage(command: 'CAP')
+      ..arg('REQ')
+      ..arg('sasl'));
+  }
+
+  void authStart(String method) {
+    add(IrcMessage(command: 'AUTHENTICATE')..arg(method));
+  }
+
+  void authUser(IrcUser user) {
+    final secret = '\x00${user.user}\x00${user.auth}';
+    final authToken = base64Encode(secret.codeUnits);
+    add(IrcMessage(command: 'AUTHENTICATE')..arg(authToken));
+    add(IrcMessage(command: 'CAP')..arg('END'));
   }
 
   void pong(IrcMessage ping) {
@@ -292,11 +337,15 @@ class IrcUser {
   final String? userRealName;
   final String? pass;
 
+  /// SASL Authentication Password
+  final String? auth;
+
   IrcUser({
     required this.nick,
     required this.user,
     this.userRealName,
     this.pass,
+    this.auth,
   });
 }
 
@@ -364,12 +413,14 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
     this._encoder,
     this._decoder,
     this._socket,
+    this._secure,
   );
 
   final IrcClient client;
   final Converter<String, List<int>> _encoder;
   final Converter<List<int>, String> _decoder;
   final RawSocket _socket;
+  final bool _secure;
 
   late _IrcStreamSubscription _subscription;
 
@@ -536,6 +587,7 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
     bool? cancelOnError,
   }) {
     final user = client.user;
+    var userIntroduced = false;
     final sink = IrcMessageSink(socket: _socket, encoder: _encoder);
     final parser = IrcParser(decoder: _decoder);
     final ponger = Timer.periodic(const Duration(seconds: 137), (_) {
@@ -560,6 +612,16 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
                   } else if (message.command == 'PRIVMSG') {
                     // Check if is CTCP.
                     sink.handleCtcp(message, nick: user.nick);
+                  } else if (message.command == 'CAP') {
+                    if (2 <= message.parameters.length &&
+                        message.parameters[0] == 'ACK' &&
+                        message.parameters.contains('sasl')) {
+                      sink.authStart('PLAIN');
+                    }
+                  } else if (message.command == 'AUTHENTICATE') {
+                    if (message.target == '+') {
+                      sink.authUser(user);
+                    }
                   }
 
                   final h = sub.handleData;
@@ -576,7 +638,17 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
           case RawSocketEvent.closed:
             break;
           case RawSocketEvent.write:
-            sink.introduce(user);
+            if (!userIntroduced) {
+              userIntroduced = true;
+              if (user.auth != null) {
+                if (_secure) {
+                  sink.capReqSasl();
+                } else {
+                  print('WARN: SASL without TLS');
+                }
+              }
+              sink.introduce(user);
+            }
             break;
         }
       },
@@ -707,6 +779,7 @@ class IrcClient {
     required String user,
     String? userRealName,
     String? pass,
+    String? auth,
     this.timeout,
     this.secure = false,
     Converter<String, List<int>>? encoder,
@@ -716,6 +789,7 @@ class IrcClient {
           user: user,
           userRealName: userRealName,
           pass: pass,
+          auth: auth,
         ),
         _encoder = encoder ?? Utf8Encoder(),
         _decoder = decoder ?? Utf8Decoder(allowMalformed: true);
@@ -723,7 +797,7 @@ class IrcClient {
   Future<IrcConnection> connect() async {
     final socket = await _connect(host, port, timeout: timeout);
     socket.setOption(SocketOption.tcpNoDelay, true);
-    return IrcConnection(this, _encoder, _decoder, socket);
+    return IrcConnection(this, _encoder, _decoder, socket, secure);
   }
 
   Future<RawSocket> _connect(dynamic host, int port, {Duration? timeout}) {

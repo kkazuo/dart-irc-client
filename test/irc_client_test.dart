@@ -7,7 +7,7 @@ void main() {
       // Additional setup goes here.
     });
 
-    test('Parse Test', () {
+    test('Parse Test', () async {
       final parser = IrcParser();
 
       parser.parse('test a'.codeUnits);
@@ -17,6 +17,10 @@ void main() {
       parser.parse('bc :ok\ntest2'.codeUnits);
       parser.parse('test a'.codeUnits);
       parser.parse('bc d=e:f :ok\n'.codeUnits);
+
+      await for (final m in parser.parse('AUTHENTICATE +\n'.codeUnits)) {
+        expect(m, IrcMessage(command: 'AUTHENTICATE', target: '+'));
+      }
 
       // expect(awesome.isAwesome, isTrue);
     });
