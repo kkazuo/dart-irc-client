@@ -2,7 +2,7 @@
 
 import 'dart:math';
 
-import 'package:irc_client/irc_client.dart';
+import 'package:irc_dart/irc_dart.dart';
 
 void main() async {
   final client = IrcClient(
@@ -33,7 +33,7 @@ void main() async {
         connection.add(IrcMessage(command: 'QUIT')..arg('Bye'));
       }
     } else if (msg.command == '001') {
-      connection.add(IrcMessage(command: 'JOIN')..arg('#irc_client_dart'));
+      connection.add(IrcMessage(command: 'JOIN')..arg('#irc_dart'));
     }
   }
   print('@ END @');

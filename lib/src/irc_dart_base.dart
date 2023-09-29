@@ -291,7 +291,7 @@ class IrcMessageSink implements StreamSink<IrcMessage> {
     }
   }
 
-  String _versionString() => 'irc_client 1.0.0 :Dart/${Platform.version}';
+  String _versionString() => 'irc_dart 1.0.0 :Dart/${Platform.version}';
 
   String _localDateString() {
     final t = DateTime.now();

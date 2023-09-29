@@ -1,4 +1,4 @@
-import 'package:irc_client/irc_client.dart';
+import 'package:irc_dart/irc_dart.dart';
 import 'package:test/test.dart';
 
 void main() {
