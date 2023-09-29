@@ -2,6 +2,7 @@
 ///
 /// Supports:
 /// - Connect to IRC server with plain text.
+/// - SASL authentication.
 /// - Automatic PING response.
 /// - Basic CTCP response. (CTCP VERSION / PING / TIME)
 library;
