@@ -56,7 +56,7 @@ class IrcMessage {
 
   @override
   String toString() =>
-      '$prefix | $command | $target | ${parameters.join(" | ")}';
+      '${prefix ?? ""} | $command | ${target ?? ""} | ${parameters.join(" | ")}';
 }
 
 enum ParseState {
