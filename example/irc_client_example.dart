@@ -19,17 +19,21 @@ void main() async {
   await for (final msg in connection) {
     print(msg);
 
-    if (msg.command == 'PRIVMSG' &&
-        msg.target == client.user.nick &&
-        msg.parameters.isNotEmpty) {
+    if (msg.command == 'PRIVMSG' && msg.parameters.isNotEmpty) {
       if (msg.parameters[0].startsWith('hi')) {
         connection.add(
-          IrcMessage(command: 'PRIVMSG', target: msg.from())
-            ..arg('Hi ${msg.from()}!'),
+          IrcMessage(
+            command: 'NOTICE',
+            target: (msg.target?.startsWith('#') ?? false)
+                ? msg.target
+                : msg.from(),
+          )..arg('Hi ${msg.from()}!'),
         );
       } else if (msg.parameters[0].startsWith('q')) {
         connection.add(IrcMessage(command: 'QUIT')..arg('Bye'));
       }
+    } else if (msg.command == '001') {
+      connection.add(IrcMessage(command: 'JOIN')..arg('#irc_client_dart'));
     }
   }
   print('@ END @');
