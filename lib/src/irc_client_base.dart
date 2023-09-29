@@ -55,8 +55,13 @@ class IrcMessage {
       );
 
   @override
-  String toString() =>
-      '${prefix ?? ""} | $command | ${target ?? ""} | ${parameters.join(" | ")}';
+  String toString() {
+    final s = StringBuffer();
+    if (prefix != null) s.write('<$prefix> ');
+    s.write('$command ${target ?? ""}');
+    if (parameters.isNotEmpty) s.write(' | ${parameters.join(" | ")}');
+    return s.toString();
+  }
 }
 
 enum ParseState {
