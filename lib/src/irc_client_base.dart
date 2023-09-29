@@ -24,7 +24,7 @@ class IrcMessage {
     if (prefix == null) return null;
     final p = prefix!;
 
-    final i = p.indexOf(RegExp(r'[!@]'));
+    final i = p.indexOf(RegExp('[!@]'));
     if (i < 0) return p;
     return p.substring(0, i);
   }
@@ -70,7 +70,7 @@ enum ParseState {
 class IrcParser {
   IrcParser({
     Converter<List<int>, String>? decoder,
-  }) : _decoder = decoder ?? Utf8Decoder(allowMalformed: true);
+  }) : _decoder = decoder ?? const Utf8Decoder(allowMalformed: true);
 
   final Converter<List<int>, String> _decoder;
 
@@ -92,10 +92,8 @@ class IrcParser {
   String _decodeBytes(Iterable<int> data, int start, int end) =>
       _decoder.convert(data.skip(start).take(end - start).toList());
 
-  Stream<IrcMessage> parse(Iterable<int> data) async* {
-    if (_rest != null) {
-      data = _rest!.followedBy(data);
-    }
+  Stream<IrcMessage> parse(Iterable<int> input) async* {
+    final data = _rest?.followedBy(input) ?? input;
 
     for (final (i, c) in data.indexed) {
       if (c == colon) {
@@ -104,15 +102,12 @@ class IrcParser {
           case ParseState.init:
             _state = ParseState.prefix;
             _lastIndex = i + 1;
-            break;
           case ParseState.target:
             _state = ParseState.rest;
             _lastIndex = i + 1;
-            break;
           case ParseState.params:
             _state = ParseState.rest;
             _lastIndex = i + 1;
-            break;
           default:
             break;
         }
@@ -122,18 +117,14 @@ class IrcParser {
           case ParseState.init:
             _command = s;
             _state = ParseState.target;
-            break;
           case ParseState.prefix:
             _prefix = s;
             _state = ParseState.init;
-            break;
           case ParseState.target:
             _target = s;
             _state = ParseState.params;
-            break;
           case ParseState.params:
             _params.add(s);
-            break;
           case ParseState.rest:
             break;
         }
@@ -143,10 +134,8 @@ class IrcParser {
           case ParseState.rest:
             final s = _decodeBytes(data, _lastIndex, i);
             _params.add(s);
-            break;
           case ParseState.target:
             _target = _decodeBytes(data, _lastIndex, i);
-            break;
           default:
             break;
         }
@@ -227,17 +216,21 @@ class IrcMessageSink implements StreamSink<IrcMessage> {
       add(IrcMessage(command: 'PASS')..arg(user.pass!));
     }
     add(IrcMessage(command: 'NICK')..arg(user.nick));
-    add(IrcMessage(command: 'USER')
-      ..arg(user.user)
-      ..arg('0')
-      ..arg('*')
-      ..arg(user.userRealName ?? user.user));
+    add(
+      IrcMessage(command: 'USER')
+        ..arg(user.user)
+        ..arg('0')
+        ..arg('*')
+        ..arg(user.userRealName ?? user.user),
+    );
   }
 
   void capReqSasl() {
-    add(IrcMessage(command: 'CAP')
-      ..arg('REQ')
-      ..arg('sasl'));
+    add(
+      IrcMessage(command: 'CAP')
+        ..arg('REQ')
+        ..arg('sasl'),
+    );
   }
 
   void authStart(String method) {
@@ -268,10 +261,12 @@ class IrcMessageSink implements StreamSink<IrcMessage> {
 
     final ctcpCommand = message.parameters[0];
     if (ctcpCommand == '\x01VERSION\x01') {
-      add(IrcMessage(
-        command: 'NOTICE',
-        target: from,
-      )..arg('\x01VERSION ${_versionString()}\x01'));
+      add(
+        IrcMessage(
+          command: 'NOTICE',
+          target: from,
+        )..arg('\x01VERSION ${_versionString()}\x01'),
+      );
     } else if (ctcpCommand.startsWith('\x01PING ') &&
         ctcpCommand.endsWith('\x01')) {
       add(
@@ -304,7 +299,7 @@ class IrcMessageSink implements StreamSink<IrcMessage> {
   }
 
   @override
-  void add(data) {
+  void add(IrcMessage data) {
     socket.sendIrcMessage(data, encoder: encoder);
   }
 
@@ -448,9 +443,10 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
   }
 
   @override
-  Stream<IrcMessage> asBroadcastStream(
-      {void Function(StreamSubscription<IrcMessage> subscription)? onListen,
-      void Function(StreamSubscription<IrcMessage> subscription)? onCancel}) {
+  Stream<IrcMessage> asBroadcastStream({
+    void Function(StreamSubscription<IrcMessage> subscription)? onListen,
+    void Function(StreamSubscription<IrcMessage> subscription)? onCancel,
+  }) {
     // TODO: implement asBroadcastStream
     throw UnimplementedError();
   }
@@ -485,8 +481,9 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
   }
 
   @override
-  Stream<IrcMessage> distinct(
-      [bool Function(IrcMessage previous, IrcMessage next)? equals]) {
+  Stream<IrcMessage> distinct([
+    bool Function(IrcMessage previous, IrcMessage next)? equals,
+  ]) {
     // TODO: implement distinct
     throw UnimplementedError();
   }
@@ -524,15 +521,19 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
   Future<IrcMessage> get first => throw UnimplementedError();
 
   @override
-  Future<IrcMessage> firstWhere(bool Function(IrcMessage element) test,
-      {IrcMessage Function()? orElse}) {
+  Future<IrcMessage> firstWhere(
+    bool Function(IrcMessage element) test, {
+    IrcMessage Function()? orElse,
+  }) {
     // TODO: implement firstWhere
     throw UnimplementedError();
   }
 
   @override
   Future<S> fold<S>(
-      S initialValue, S Function(S previous, IrcMessage element) combine) {
+    S initialValue,
+    S Function(S previous, IrcMessage element) combine,
+  ) {
     // TODO: implement fold
     throw UnimplementedError();
   }
@@ -544,8 +545,10 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
   }
 
   @override
-  Stream<IrcMessage> handleError(Function onError,
-      {bool Function(dynamic error)? test}) {
+  Stream<IrcMessage> handleError(
+    Function onError, {
+    bool Function(dynamic error)? test,
+  }) {
     // TODO: implement handleError
     throw UnimplementedError();
   }
@@ -569,8 +572,10 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
   Future<IrcMessage> get last => throw UnimplementedError();
 
   @override
-  Future<IrcMessage> lastWhere(bool Function(IrcMessage element) test,
-      {IrcMessage Function()? orElse}) {
+  Future<IrcMessage> lastWhere(
+    bool Function(IrcMessage element) test, {
+    IrcMessage Function()? orElse,
+  }) {
     // TODO: implement lastWhere
     throw UnimplementedError();
   }
@@ -630,11 +635,9 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
                 cancelOnError: cancelOnError,
               );
             }
-            break;
           case RawSocketEvent.readClosed:
             ponger.cancel();
             _socket.close();
-            break;
           case RawSocketEvent.closed:
             break;
           case RawSocketEvent.write:
@@ -649,7 +652,6 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
               }
               sink.introduce(user);
             }
-            break;
         }
       },
       onDone: () {
@@ -683,7 +685,8 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
 
   @override
   Future<IrcMessage> reduce(
-      IrcMessage Function(IrcMessage previous, IrcMessage element) combine) {
+    IrcMessage Function(IrcMessage previous, IrcMessage element) combine,
+  ) {
     // TODO: implement reduce
     throw UnimplementedError();
   }
@@ -693,8 +696,10 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
   Future<IrcMessage> get single => throw UnimplementedError();
 
   @override
-  Future<IrcMessage> singleWhere(bool Function(IrcMessage element) test,
-      {IrcMessage Function()? orElse}) {
+  Future<IrcMessage> singleWhere(
+    bool Function(IrcMessage element) test, {
+    IrcMessage Function()? orElse,
+  }) {
     // TODO: implement singleWhere
     throw UnimplementedError();
   }
@@ -724,8 +729,10 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
   }
 
   @override
-  Stream<IrcMessage> timeout(Duration timeLimit,
-      {void Function(EventSink<IrcMessage> sink)? onTimeout}) {
+  Stream<IrcMessage> timeout(
+    Duration timeLimit, {
+    void Function(EventSink<IrcMessage> sink)? onTimeout,
+  }) {
     // TODO: implement timeout
     throw UnimplementedError();
   }
@@ -791,8 +798,8 @@ class IrcClient {
           pass: pass,
           auth: auth,
         ),
-        _encoder = encoder ?? Utf8Encoder(),
-        _decoder = decoder ?? Utf8Decoder(allowMalformed: true);
+        _encoder = encoder ?? const Utf8Encoder(),
+        _decoder = decoder ?? const Utf8Decoder(allowMalformed: true);
 
   Future<IrcConnection> connect() async {
     final socket = await _connect(host, port, timeout: timeout);

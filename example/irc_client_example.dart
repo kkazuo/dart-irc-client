@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:math';
 
 import 'package:irc_client/irc_client.dart';
@@ -21,8 +23,10 @@ void main() async {
         msg.target == client.user.nick &&
         msg.parameters.isNotEmpty) {
       if (msg.parameters[0].startsWith('hi')) {
-        connection.add(IrcMessage(command: 'PRIVMSG', target: msg.from())
-          ..arg('Hi ${msg.from()}!'));
+        connection.add(
+          IrcMessage(command: 'PRIVMSG', target: msg.from())
+            ..arg('Hi ${msg.from()}!'),
+        );
       } else if (msg.parameters[0].startsWith('q')) {
         connection.add(IrcMessage(command: 'QUIT')..arg('Bye'));
       }
