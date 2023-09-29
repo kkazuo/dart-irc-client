@@ -21,6 +21,6 @@ await for (final msg in connection) {
 
 ## Additional information
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+This library is in its very early stages.
+It only supports sending and receiving raw IRC messages.
+No useful methods are available yet.
