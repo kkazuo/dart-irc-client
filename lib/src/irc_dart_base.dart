@@ -217,9 +217,6 @@ class IrcMessageSink implements StreamSink<IrcMessage> {
   IrcMessageSink({required this.socket, required this.encoder});
 
   void introduce(IrcUser user) {
-    if (user.pass != null) {
-      add(IrcMessage(command: 'PASS')..arg(user.pass!));
-    }
     add(IrcMessage(command: 'NICK')..arg(user.nick));
     add(
       IrcMessage(command: 'USER')
@@ -246,7 +243,6 @@ class IrcMessageSink implements StreamSink<IrcMessage> {
     final secret = '\x00${user.user}\x00${user.auth}';
     final authToken = base64Encode(secret.codeUnits);
     add(IrcMessage(command: 'AUTHENTICATE')..arg(authToken));
-    add(IrcMessage(command: 'CAP')..arg('END'));
   }
 
   void pong(IrcMessage ping) {
@@ -598,6 +594,8 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
   }) {
     final user = client.user;
     var userIntroduced = false;
+    var userLoggedIn = false;
+    var clientLoggedIn = false;
     final sink = IrcMessageSink(socket: _socket, encoder: _encoder);
     final parser = IrcParser(decoder: _decoder);
     final ponger = Timer.periodic(const Duration(seconds: 137), (_) {
@@ -632,6 +630,12 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
                     if (message.target == '+') {
                       sink.authUser(user);
                     }
+                  } else if (message.command == '903') {
+                    add(IrcMessage(command: 'CAP')..arg('END'));
+                    if (!userIntroduced) {
+                      userIntroduced = true;
+                      sink.introduce(user);
+                    }
                   }
 
                   final h = sub.handleData;
@@ -646,15 +650,23 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
           case RawSocketEvent.closed:
             break;
           case RawSocketEvent.write:
+            if (!clientLoggedIn) {
+              final pass = user.pass;
+              if (pass != null) {
+                sink.add(IrcMessage(command: 'PASS')..arg(pass));
+              }
+              clientLoggedIn = true;
+            }
+            if (!userLoggedIn) {
+              if (user.auth == null) {
+                userLoggedIn = true;
+              } else if (_secure) {
+                sink.capReqSasl();
+                break;
+              }
+            }
             if (!userIntroduced) {
               userIntroduced = true;
-              if (user.auth != null) {
-                if (_secure) {
-                  sink.capReqSasl();
-                } else {
-                  print('WARN: SASL without TLS');
-                }
-              }
               sink.introduce(user);
             }
         }
