@@ -1,3 +1,7 @@
+## 1.1.2
+
+- Fix: client auto PONG message format.
+
 ## 1.1.1
 
 - Fix: default port to connect with TLS are 6697.

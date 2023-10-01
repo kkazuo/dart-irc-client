@@ -623,11 +623,15 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
     var userIntroduced = false;
     var userLoggedIn = false;
     var clientLoggedIn = false;
+    String? servername;
     final sink = IrcMessageSink(socket: _socket, encoder: _encoder);
     final parser = IrcParser(decoder: _decoder);
     final ponger = Timer.periodic(const Duration(seconds: 137), (_) {
       try {
-        sink.add(IrcMessage(command: 'PONG'));
+        final target = servername;
+        if (target != null) {
+          sink.add(IrcMessage(command: 'PONG')..arg(target));
+        }
       } catch (_) {}
     });
     final sub = _IrcStreamSubscription(sink, cancelOnError ?? false)
@@ -662,6 +666,10 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
                     if (!userIntroduced) {
                       userIntroduced = true;
                       sink.introduce(user);
+                    }
+                  } else if (message.command == '004') {
+                    if (message.parameters.isNotEmpty) {
+                      servername = message.parameters[0];
                     }
                   }
 
