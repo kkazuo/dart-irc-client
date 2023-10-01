@@ -1,6 +1,7 @@
-## 1.1.2
+## 1.2.0
 
 - Fix: client auto PONG message format.
+- Add: supports client certificate on connect with TLS. (for irc.oftc.net)
 
 ## 1.1.1
 

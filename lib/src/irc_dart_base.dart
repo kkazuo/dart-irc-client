@@ -821,6 +821,9 @@ class IrcClient {
   final Duration? timeout;
   final bool secure;
 
+  /// (Public Key File Path, Private Key File Path, Priv Key File Password)
+  final (String, String, String?)? clientCertificateFile;
+
   final IrcUser user;
 
   final Converter<String, List<int>> _encoder;
@@ -841,6 +844,7 @@ class IrcClient {
     String? auth,
     this.timeout,
     this.secure = false,
+    this.clientCertificateFile,
     Converter<String, List<int>>? encoder,
     Converter<List<int>, String>? decoder,
   })  : user = IrcUser(
@@ -862,7 +866,19 @@ class IrcClient {
 
   Future<RawSocket> _connect(dynamic host, int port, {Duration? timeout}) {
     if (secure) {
-      return RawSecureSocket.connect(host, port, timeout: timeout);
+      final context = SecurityContext.defaultContext;
+      final clientCert = clientCertificateFile;
+      if (clientCert != null) {
+        final (cert, key, password) = clientCert;
+        context.useCertificateChain(cert);
+        context.usePrivateKey(key, password: password);
+      }
+      return RawSecureSocket.connect(
+        host,
+        port,
+        timeout: timeout,
+        context: context,
+      );
     } else {
       return RawSocket.connect(host, port, timeout: timeout);
     }
