@@ -1,3 +1,7 @@
+## 1.2.1
+
+- Fix: documentation
+
 ## 1.2.0
 
 - Fix: client auto PONG message format.

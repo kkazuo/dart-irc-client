@@ -5,7 +5,8 @@ A trivial IRC client library.
 Supports:
 
 - Connect to IRC server with plain text or secured with TLS.
-- SASL authentication.
+- TLS with client certificate authentication. (for irc.oftc.net)
+- SASL authentication. (for irc.libera.chat)
 - Automatic PING response.
 - Basic CTCP response. (CTCP VERSION / PING / TIME)
 
