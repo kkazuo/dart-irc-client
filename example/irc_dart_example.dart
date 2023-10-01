@@ -29,6 +29,8 @@ void main() async {
                 : msg.from(),
           )..arg('Hi ${msg.from()}!'),
         );
+
+        await connection.msg(to: '#irc_dart', 'Hello, world!');
       } else if (msg.parameters[0].startsWith('q')) {
         connection.add(IrcMessage(command: 'QUIT')..arg('Bye'));
       }
