@@ -1,6 +1,6 @@
 name: irc_dart
 description: IRC client library for Dart.
-version: 1.1.0
+version: 1.1.1
 repository: https://github.com/kkazuo/dart-irc-client
 
 environment:

@@ -825,7 +825,7 @@ class IrcClient {
   /// Default decoder is UTF-8.
   IrcClient({
     required this.host,
-    this.port = 6667,
+    int? port,
     required String nick,
     required String user,
     String? userRealName,
@@ -842,6 +842,7 @@ class IrcClient {
           pass: pass,
           auth: auth,
         ),
+        port = port ?? (secure ? 6697 : 6667),
         _encoder = encoder ?? const Utf8Encoder(),
         _decoder = decoder ?? const Utf8Decoder(allowMalformed: true);
 

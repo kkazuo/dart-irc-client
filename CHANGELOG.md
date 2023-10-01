@@ -1,3 +1,7 @@
+## 1.1.1
+
+- Fix: default port to connect with TLS are 6697.
+
 ## 1.1.0
 
 - Add: a convinience method to send text to a channel.

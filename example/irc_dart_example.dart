@@ -8,7 +8,6 @@ void main() async {
   final client = IrcClient(
     // host: 'irc.rizon.net',
     host: 'irc.libera.chat',
-    port: 6697,
     secure: true,
     nick: 'n${Random().nextInt(100000000).toString().padLeft(8, '0')}',
     user: 'dart@example.com',
