@@ -8,5 +8,6 @@
 library;
 
 export 'src/irc_dart_base.dart';
+export 'src/string_ext.dart';
 
 // TODO: Export any libraries intended for clients of this package.

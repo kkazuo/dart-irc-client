@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:irc_dart/irc_dart.dart';
 import 'package:test/test.dart';
 
@@ -23,6 +25,17 @@ void main() {
       }
 
       // expect(awesome.isAwesome, isTrue);
+    });
+
+    test('Line Breaker', () async {
+      final text = 'hello 世界!';
+
+      final ls = await text.toByteLines(maxBytes: 4).toList();
+      expect(ls.length, 4);
+      expect(ls[0], [104, 101, 108, 108]);
+      expect(ls[1], [111, 32]);
+      expect(ls[2], [228, 184, 150]);
+      expect(ls[3], [231, 149, 140, 33]);
     });
   });
 }
