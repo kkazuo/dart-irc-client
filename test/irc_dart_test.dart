@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:irc_dart/irc_dart.dart';
 import 'package:test/test.dart';
 
@@ -28,7 +26,7 @@ void main() {
     });
 
     test('Line Breaker', () async {
-      final text = 'hello 世界!';
+      const text = 'hello 世界!';
 
       final ls = await text.toByteLines(maxBytes: 4).toList();
       expect(ls.length, 4);
