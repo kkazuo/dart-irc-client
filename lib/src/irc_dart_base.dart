@@ -437,7 +437,7 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
     final prefix = pri + tob + cln;
 
     // FIXME: How can I detect my real hostname?
-    const mynameLen = 76;
+    const mynameLen = 140;
 
     final maxBytes = 509 - prefix.length - mynameLen;
     await for (final bytes in text
