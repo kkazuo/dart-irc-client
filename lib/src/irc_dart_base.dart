@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:irc_dart/src/string_ext.dart';
+
 /// IRC Message
 class IrcMessage {
   final String? prefix;
@@ -90,6 +92,7 @@ class IrcParser {
 
   static final cr = '\r'.codeUnitAt(0);
   static final lf = '\n'.codeUnitAt(0);
+  static final crlf = '\r\n'.codeUnits;
   static final space = ' '.codeUnitAt(0);
   static final colon = ':'.codeUnitAt(0);
   static final ban = '!'.codeUnitAt(0);
@@ -419,6 +422,30 @@ class IrcConnection implements Stream<IrcMessage>, StreamSink<IrcMessage> {
   final bool _secure;
 
   late _IrcStreamSubscription _subscription;
+
+  /// Send text to channel.
+  ///
+  /// If text has too long, text may be splited into multi lines.
+  Future msg(
+    String text, {
+    required String to,
+    bool notice = false,
+  }) async {
+    final pri = (notice ? 'NOTICE ' : 'PRIVMSG ').codeUnits;
+    final tob = _encoder.convert(to);
+    final cln = ' :'.codeUnits;
+    final prefix = pri + tob + cln;
+
+    // FIXME: How can I detect my real hostname?
+    const mynameLen = 76;
+
+    final maxBytes = 509 - prefix.length - mynameLen;
+    await for (final bytes in text
+        .toByteLines(maxBytes: maxBytes, encoder: _encoder)
+        .map((msg) => prefix + msg + IrcParser.crlf)) {
+      _socket.write(bytes);
+    }
+  }
 
   @override
   void add(IrcMessage event) {
